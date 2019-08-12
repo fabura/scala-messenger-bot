@@ -11,6 +11,7 @@ import com.cpuheater.bot.route.FBRoute
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 object BotApp extends App with FBRoute with LazyLogging {
@@ -20,11 +21,11 @@ object BotApp extends App with FBRoute with LazyLogging {
     Supervision.Stop
   }
 
-  implicit val actorSystem = ActorSystem("bot", ConfigFactory.load)
-  val materializerSettings = ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
-  implicit val materializer = ActorMaterializer(materializerSettings)(actorSystem)
+  implicit val actorSystem: ActorSystem = ActorSystem("bot", ConfigFactory.load)
+  val materializerSettings: ActorMaterializerSettings = ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(materializerSettings)
 
-  implicit val ec = actorSystem.dispatcher
+  implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
   val routes = {
     logRequestResult("bot") {
