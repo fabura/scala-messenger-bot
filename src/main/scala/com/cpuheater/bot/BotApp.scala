@@ -60,18 +60,19 @@ object BotApp extends App with FBRoute with CertRoute with LazyLogging {
 
   val port: Int = sys.env.getOrElse("PORT", "8080").toInt
 
-  Http().bindAndHandle(
-    handler = routeLogging,
-    interface = "0.0.0.0",
-    port = port,
-    connectionContext = ConnectionContext.https(sslContext)
-  ) map { binding =>
-    logger.info(s"HTTPD bound to ${binding.localAddress}")
-  } recover { case ex =>
-    logger.info(s"HTTPS could not bind", ex.getMessage)
-  }
+  //  Http().bindAndHandle(
+  //    handler = routeLogging,
+  //    interface = "0.0.0.0",
+  //    port = port,
+  //    connectionContext = ConnectionContext.https(sslContext)
+  //  ) map { binding =>
+  //    logger.info(s"HTTPD bound to ${binding.localAddress}")
+  //  } recover { case ex =>
+  //    logger.info(s"HTTPS could not bind", ex.getMessage)
+  //  }
 
-//  Http().bindAndHandle(routeLogging, "0.0.0.0", 8080)
+  Http().bindAndHandle(routeLogging, "0.0.0.0", port)
+  logger.info(s"HTTP bound to 0.0.0.0:$port")
   logger.info("Starting")
 
 }
