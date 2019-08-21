@@ -22,11 +22,11 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging)
 
-enablePlugins(DockerPlugin)
-
-enablePlugins(AshScriptPlugin)
-
-dockerExposedPorts := Seq(8080)
-
-dockerBaseImage := "openjdk:jre-alpine"
+//enablePlugins(DockerPlugin)
+//
+//enablePlugins(AshScriptPlugin)
+//
+//dockerExposedPorts := Seq(8080)
+//
+//dockerBaseImage := "openjdk:jre-alpine"
 
