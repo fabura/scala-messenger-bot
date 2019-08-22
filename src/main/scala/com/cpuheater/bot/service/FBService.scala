@@ -38,8 +38,8 @@ object FBService extends LazyLogging {
     fbObject.entry.foreach {
       entry =>
         entry.messaging.foreach { me =>
-          Future.successful(())
-          ValyaBotService.handleMessage(me)
+          Future.successful(()).onComplete(_ =>
+            ValyaBotService.handleMessage(me))
         }
     }
     (StatusCodes.OK, List.empty[HttpHeader], None)
