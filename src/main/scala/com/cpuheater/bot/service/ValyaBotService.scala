@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.cpuheater.bot.model
 import com.cpuheater.bot.model.{FBMessage, FBMessageEventOut, FBPostback, FBRecipient}
-import com.cpuheater.bot.service.Step.StepId
 import com.cpuheater.bot.util.HttpClient
 import com.cpuheater.bot.json.BotJson._
 
