@@ -4,13 +4,15 @@ package object model {
 
   case class Payload(url: String)
 
-  case class Attachment(`type`: String,payload: Payload)
+  case class Attachment(`type`: String, payload: Payload)
 
   case class FBMessage(mid: Option[String] = None,
                        seq: Option[Long] = None,
                        text: Option[String] = None,
                        metadata: Option[String] = None,
                        attachment: Option[Attachment] = None)
+
+  case class FBPostback(title: Option[String], payload: Option[String])
 
   case class FBSender(id: String)
 
@@ -20,7 +22,8 @@ package object model {
   case class FBMessageEventIn(sender: FBSender,
                               recipient: FBRecipient,
                               timestamp: Long,
-                              message: FBMessage)
+                              message: Option[FBMessage],
+                              postback: Option[FBPostback])
 
   case class FBMessageEventOut(recipient: FBRecipient,
                                message: FBMessage)

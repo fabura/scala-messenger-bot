@@ -17,6 +17,7 @@ import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
+
 object BotApp extends App with FBRoute with CertRoute with LazyLogging {
 
   val decider: Supervision.Decider = { e =>
@@ -43,33 +44,7 @@ object BotApp extends App with FBRoute with CertRoute with LazyLogging {
   // do not store passwords in code, read them from somewhere safe!
   val password = "".toCharArray
 
-  val ks: KeyStore = KeyStore.getInstance("PKCS12")
-  val keystore = getClass.getClassLoader.getResourceAsStream("fullchain.p12")
-
-  require(keystore != null, "Keystore required!")
-  ks.load(keystore, password)
-
-  val kmf = KeyManagerFactory.getInstance("SunX509")
-  kmf.init(ks, password)
-
-  val tmf = TrustManagerFactory.getInstance("SunX509")
-  tmf.init(ks)
-
-  val sslContext: SSLContext = SSLContext.getInstance("TLS")
-  sslContext.init(kmf.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
-
   val port: Int = sys.env.getOrElse("PORT", "8080").toInt
-
-  //  Http().bindAndHandle(
-  //    handler = routeLogging,
-  //    interface = "0.0.0.0",
-  //    port = port,
-  //    connectionContext = ConnectionContext.https(sslContext)
-  //  ) map { binding =>
-  //    logger.info(s"HTTPD bound to ${binding.localAddress}")
-  //  } recover { case ex =>
-  //    logger.info(s"HTTPS could not bind", ex.getMessage)
-  //  }
 
   Http().bindAndHandle(routeLogging, "0.0.0.0", port)
   logger.info(s"HTTP bound to 0.0.0.0:$port")

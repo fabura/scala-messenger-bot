@@ -12,11 +12,13 @@ object BotJson extends  DefaultJsonProtocol{
 
   implicit val fbMessageFormat = jsonFormat5(FBMessage)
 
+  implicit val FBPostbackFormat = jsonFormat2(FBPostback)
+
   implicit val fbSenderFormat = jsonFormat1(FBSender)
 
   implicit val fbRecipientFormat = jsonFormat1(FBRecipient)
 
-  implicit val fbMessageObjectFormat = jsonFormat4(FBMessageEventIn)
+  implicit val fbMessageObjectFormat = jsonFormat5(FBMessageEventIn)
 
   implicit val fbMessageEventOutFormatOut = jsonFormat2(FBMessageEventOut)
 
