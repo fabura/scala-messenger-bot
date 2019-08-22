@@ -14,19 +14,29 @@ object ValyaBotService {
   def handleMessage(me: model.FBMessageEventIn)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
     val senderId = me.sender.id
     me.postback match {
-      case Some(FBPostback(_, Some("start"))) =>
-        val response = FBMessageEventOut(recipient = FBRecipient(senderId),
-          message = FBMessage(text = Some(s"Привет, пидр!"),
-            metadata = Some("lol")))
-        HttpClient.post(response).map(_ => ())
+      case Some(postback: FBPostback) =>
+        handlePostBack(senderId, postback)
+      case None => _
     }
     me.message match {
       case Some(FBMessage(_, _, Some(text), _, _)) =>
-        val fbMessage = FBMessageEventOut(recipient = FBRecipient(senderId),
-          message = FBMessage(text = Some(s"Scala messenger bot: $text"),
-            metadata = Some("DEVELOPER_DEFINED_METADATA")))
-        HttpClient.post(fbMessage).map(_ => ())
+
+      case None => _
     }
+  }
+
+  def handlePostBack(senderId: String, FBPostback: FBPostback)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
+    val response = FBMessageEventOut(recipient = FBRecipient(senderId),
+      message = FBMessage(text = Some(s"Привет, пидр!"),
+        metadata = Some("lol")))
+    HttpClient.post(response)
+  }
+
+  def handleMessage(senderId: String, FBMessage: FBMessage)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
+    val fbMessage = FBMessageEventOut(recipient = FBRecipient(senderId),
+      message = FBMessage(text = Some(s"Scala messenger bot: $text"),
+        metadata = Some("DEVELOPER_DEFINED_METADATA")))
+    HttpClient.post(fbMessage).map(_ => ())
   }
 }
 
