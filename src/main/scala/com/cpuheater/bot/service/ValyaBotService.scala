@@ -6,37 +6,39 @@ import com.cpuheater.bot.model
 import com.cpuheater.bot.model.{FBMessage, FBMessageEventOut, FBPostback, FBRecipient}
 import com.cpuheater.bot.util.HttpClient
 import com.cpuheater.bot.json.BotJson._
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
 
-object ValyaBotService {
+object ValyaBotService extends LazyLogging {
   def handleMessage(me: model.FBMessageEventIn)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
     val senderId = me.sender.id
-    me.postback match {
-      case Some(postback: FBPostback) =>
-        handlePostBack(senderId, postback)
-      case None => _
-    }
-    me.message match {
-      case Some(FBMessage(_, _, Some(text), _, _)) =>
+    me.postback.foreach(handlePostBack(senderId, _))
+    me.message.foreach(handleMessage(senderId, _))
+  }
 
-      case None => _
+  def handlePostBack(senderId: String, postback: FBPostback)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
+    postback.payload match {
+      case Some("start") =>
+        val response = FBMessageEventOut(recipient = FBRecipient(senderId),
+          message = FBMessage(text = Some(s"Введите имя и фамилию"),
+            metadata = Some("lol")))
+        HttpClient.post(response)
+      case Some(_) => logger.debug(s"Unknown postback: $postback")
+      case None => logger.debug(s"Empty payload: $postback")
     }
   }
 
-  def handlePostBack(senderId: String, FBPostback: FBPostback)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
-    val response = FBMessageEventOut(recipient = FBRecipient(senderId),
-      message = FBMessage(text = Some(s"Привет, пидр!"),
-        metadata = Some("lol")))
-    HttpClient.post(response)
-  }
-
-  def handleMessage(senderId: String, FBMessage: FBMessage)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
-    val fbMessage = FBMessageEventOut(recipient = FBRecipient(senderId),
-      message = FBMessage(text = Some(s"Scala messenger bot: $text"),
-        metadata = Some("DEVELOPER_DEFINED_METADATA")))
-    HttpClient.post(fbMessage).map(_ => ())
+  def handleMessage(senderId: String, message: FBMessage)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
+    message.text match {
+      case Some(text) =>
+        val fbMessage = FBMessageEventOut(recipient = FBRecipient(senderId),
+          message = FBMessage(text = Some(s"Scala messenger bot: $text"),
+            metadata = Some("DEVELOPER_DEFINED_METADATA")))
+        HttpClient.post(fbMessage).map(_ => ())
+      case None => logger.info("No text in message")
+    }
   }
 }
 
