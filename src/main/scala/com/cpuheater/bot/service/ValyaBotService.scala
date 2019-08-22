@@ -31,22 +31,22 @@ object ValyaBotService {
   }
 }
 
-
-trait BotStep[F[_]] {
-  val id: StepId
-
-  def nextId: StepId
-
-  def action: FBMessage => F[Unit]
-}
-
-case class Step[F[_]](id: StepId, nextId: StepId, action: FBMessage => F[FBMessage]) extends BotStep[F]
-
-object Step {
-  type StepId = String
-
-  val flow = Seq(
-    Step("1", "2",)
-  )
-}
-
+//
+//trait BotStep[F[_]] {
+//  val id: StepId
+//
+//  def nextId: StepId
+//
+//  def action: FBMessage => F[Unit]
+//}
+//
+//case class Step[F[_]](id: StepId, nextId: StepId, action: FBMessage => F[FBMessage]) extends BotStep[F]
+//
+//object Step {
+//  type StepId = String
+//
+//  val flow = Seq(
+//    Step("1", "2",)
+//  )
+//}
+//
