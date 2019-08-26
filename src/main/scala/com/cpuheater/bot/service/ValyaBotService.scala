@@ -2,6 +2,7 @@ package com.cpuheater.bot.service
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import com.cpuheater.bot.db.DbModel.StepId
 import com.cpuheater.bot.model
 import com.cpuheater.bot.model.{FBMessage, FBMessageEventOut, FBPostback, FBRecipient}
 import com.cpuheater.bot.util.HttpClient
@@ -42,22 +43,23 @@ object ValyaBotService extends LazyLogging {
   }
 }
 
-//
-//trait BotStep[F[_]] {
-//  val id: StepId
-//
-//  def nextId: StepId
-//
-//  def action: FBMessage => F[Unit]
-//}
-//
-//case class Step[F[_]](id: StepId, nextId: StepId, action: FBMessage => F[FBMessage]) extends BotStep[F]
-//
-//object Step {
-//  type StepId = String
-//
-//  val flow = Seq(
-//    Step("1", "2",)
-//  )
-//}
-//
+trait BotStep[F[_]] {
+  val id: StepId
+
+  def nextId: StepId
+
+  def action: FBMessage => F[Unit]
+}
+
+case class Step[F[_]](id: StepId, nextId: StepId, action: FBMessage => F[Unit]) extends BotStep[F]
+
+object Step {
+
+  val flow = Seq(
+    Step(StepId("1"), StepId("2"), fbMessage => {
+        fbMessage
+
+    })
+  )
+}
+
