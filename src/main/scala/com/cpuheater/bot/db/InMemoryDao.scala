@@ -6,10 +6,10 @@ class InMemoryDao extends BotDao {
 
   private val usersMap: scala.collection.mutable.Map[String, User] = scala.collection.mutable.Map()
 
-  override def getStepId(userId: String): Option[StepId] = usersMap.get(userId).map(_.stepId)
+  override def getStepId(userId: String): Option[(String, StepId)] = usersMap.get(userId).map(u => u.flowId -> u.stepId)
 
-  override def updateUserStepId(userId: String, step: DbModel.StepId): Unit = {
-    val user = usersMap.getOrElseUpdate(userId, User(userId, step))
+  override def updateUserStepId(userId: String,flowId: String, step: DbModel.StepId): Unit = {
+    val user = usersMap.getOrElseUpdate(userId, User(userId,flowId, step))
     val newUser = user.copy(stepId = step)
     usersMap.update(userId, newUser)
   }

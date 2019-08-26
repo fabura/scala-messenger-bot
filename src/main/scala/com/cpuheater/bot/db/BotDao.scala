@@ -4,9 +4,9 @@ import com.cpuheater.bot.db.DbModel.{StepId, User}
 
 trait BotDao {
 
-  def getStepId(userId: String): Option[StepId]
+  def getStepId(userId: String): Option[(String, StepId)]
 
-  def updateUserStepId(userId: String, step: StepId)
+  def updateUserStepId(userId: String, flowId: String, step: StepId)
 
   def getUser(userId: String): Option[User]
 
