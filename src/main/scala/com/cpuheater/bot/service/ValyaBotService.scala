@@ -31,7 +31,7 @@ object ValyaBotService extends LazyLogging {
       .flatMap(_.find(_ == stepId))
       .flatMap(stepsRunner.steps.get)
 
-    if (function.isDefined) {
+    if (function.isEmpty) {
       logger.debug(s"Cannot find step for user: $senderId, $flowId, $stepId")
     } else {
       function.get.action.apply(me)
@@ -126,7 +126,7 @@ trait StepsRunner extends LazyLogging {
       HttpClient.post("Готово!")
     }),
     Step(Steps.Help, (me: FBMessageEventIn) => {
-      HttpClient.post("Тут будет помощь!!")
+      HttpClient.post("Тут будет помощь!")
     }),
   ).map(x => x.id -> x).toMap
 
@@ -149,7 +149,7 @@ object Steps {
     nextStep.map(flowId -> _).getOrElse("help" -> Help)
   }
 
-  val flows = Map(
+  val flows: Map[String, List[StepId]] = Map(
     "basic" -> (AskName :: AddName :: AskSkills :: AddSkills :: AskSubskills :: AddSubkills :: AskFrequency :: AddFrequency :: Finish :: Nil),
     "help" -> (Help :: Nil)
   )
