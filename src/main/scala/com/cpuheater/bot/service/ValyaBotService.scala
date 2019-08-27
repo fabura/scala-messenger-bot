@@ -8,6 +8,7 @@ import com.cpuheater.bot.model
 import com.cpuheater.bot.model.{FBMessage, FBMessageEventIn, FBMessageEventOut, FBPostback, FBRecipient}
 import com.cpuheater.bot.util.HttpClient
 import com.cpuheater.bot.json.BotJson._
+import com.cpuheater.bot.service.Steps.logger
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.ExecutionContext
@@ -36,6 +37,7 @@ object ValyaBotService extends LazyLogging {
     } else {
       function.get.action.apply(me)
       val (newFlowId, newStepId) = Steps.nextStep(flowId, stepId)
+      logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
       dao.getUser(senderId).map(_.copy(flowId = newFlowId, stepId = newStepId)).foreach(dao.saveUser)
     }
   }
@@ -132,7 +134,7 @@ trait StepsRunner extends LazyLogging {
 
 }
 
-object Steps {
+object Steps extends LazyLogging {
   val AskName = StepId("ask name")
   val AddName = StepId("add name")
   val AskSkills = StepId("ask skills")
@@ -145,7 +147,7 @@ object Steps {
   val Help = StepId("help")
 
   def nextStep(flowId: String, stepId: StepId): (String, StepId) = {
-    val nextStep = flows.get(flowId).flatMap(_.dropWhile(_ != stepId).headOption)
+    val nextStep = flows.get(flowId).flatMap(_.dropWhile(_ != stepId).drop(1).headOption)
     nextStep.map(flowId -> _).getOrElse("help" -> Help)
   }
 
