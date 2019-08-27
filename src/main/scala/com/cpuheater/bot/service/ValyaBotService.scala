@@ -35,6 +35,8 @@ object ValyaBotService extends LazyLogging {
       logger.debug(s"Cannot find step for user: $senderId, $flowId, $stepId")
     } else {
       function.get.action.apply(me)
+      val (newFlowId, newStepId) = Steps.nextStep(flowId, stepId)
+      dao.getUser(senderId).map(_.copy(flowId = newFlowId, stepId = newStepId)).foreach(dao.saveUser)
     }
   }
 
@@ -119,7 +121,13 @@ trait StepsRunner extends LazyLogging {
       val updatedUser = getUser(senderId).flatMap(u => me.message.map(message => u.copy(frequency = message.text)))
       updatedUser.foreach(saveUser)
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
-    })
+    }),
+    Step(Steps.Finish, (me: FBMessageEventIn) => {
+      HttpClient.post("Готово!")
+    }),
+    Step(Steps.Help, (me: FBMessageEventIn) => {
+      HttpClient.post("Тут будет помощь!!")
+    }),
   ).map(x => x.id -> x).toMap
 
 }
@@ -133,8 +141,16 @@ object Steps {
   val AddSubkills = StepId("add subkills")
   val AskFrequency = StepId("ask frequency")
   val AddFrequency = StepId("add frequency")
+  val Finish = StepId("finish")
+  val Help = StepId("help")
+
+  def nextStep(flowId: String, stepId: StepId): (String, StepId) = {
+    val nextStep = flows.get(flowId).flatMap(_.dropWhile(_ != stepId).headOption)
+    nextStep.map(flowId -> _).getOrElse("help" -> Help)
+  }
 
   val flows = Map(
-    "basic" -> (AskName :: AddName :: AskSkills :: AddSkills :: AskSubskills :: AddSubkills :: AskFrequency :: AddFrequency :: Nil)
+    "basic" -> (AskName :: AddName :: AskSkills :: AddSkills :: AskSubskills :: AddSubkills :: AskFrequency :: AddFrequency :: Finish :: Nil),
+    "help" -> (Help :: Nil)
   )
 }
