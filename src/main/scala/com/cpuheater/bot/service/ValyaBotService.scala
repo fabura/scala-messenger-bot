@@ -28,19 +28,16 @@ object ValyaBotService extends LazyLogging {
       implicit val sys = system
     }
 
-    val function = Steps.flows.get(flowId)
-      .flatMap(_.find(_ == stepId))
-      .flatMap(stepsRunner.steps.get)
-
-    if (function.isEmpty) {
+    val steps = Steps.find(flowId, stepId)
+    if (steps.isEmpty) {
       logger.debug(s"Cannot find step for user: $senderId, $flowId, $stepId")
     } else {
-      function.get.action.apply(me)
-      val (newFlowId, newStepId) = Steps.nextStep(flowId, stepId)
+      steps.get.map(s => stepsRunner.steps.getOrElse(s, sys.error(s"not step! $s"))).map(_.action).foreach(_.apply(me))
+      val (newFlowId, newStepId) = Steps.nextStep(flowId, steps.get.last)
       logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
       dao.updateUserStepId(senderId, newFlowId, newStepId)
     }
-    dao.print();
+    dao.print()
   }
 
   def handlePostBack(senderId: String, postback: FBPostback)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
@@ -87,8 +84,7 @@ trait StepsRunner extends LazyLogging {
   val steps: Map[StepId, Step] = Seq(
     Step(Steps.AskName, (me: FBMessageEventIn) => {
       val response = FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(s"Введите имя и фамилию"),
-          metadata = Some("lol")))
+        message = FBMessage(text = Some(s"Введите имя и фамилию")))
       HttpClient.post(response)
     }),
     Step(Steps.AddName, (me: FBMessageEventIn) => {
@@ -99,7 +95,8 @@ trait StepsRunner extends LazyLogging {
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.AskSkills, (me: FBMessageEventIn) => {
-      HttpClient.post("Пожалуйста, введите навыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки")
+      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"Пожалуйста, введите навыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
     }),
     Step(Steps.AddSkills, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -108,7 +105,8 @@ trait StepsRunner extends LazyLogging {
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.AskSubskills, (me: FBMessageEventIn) => {
-      HttpClient.post("Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки")
+      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
     }),
     Step(Steps.AddSubkills, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -117,7 +115,8 @@ trait StepsRunner extends LazyLogging {
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
-      HttpClient.post("Пожалуйста, введите периодичность. (Валенька, эта стадия еще не готова окончательно. Пока можно написать \"2 недели\"")
+      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"Пожалуйста, введите периодичность. (Валенька, эта стадия еще не готова окончательно. Пока можно написать \"2 недели\""))))
     }),
     Step(Steps.AddFrequency, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -126,10 +125,12 @@ trait StepsRunner extends LazyLogging {
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.Finish, (me: FBMessageEventIn) => {
-      HttpClient.post("Готово!")
+      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"Готово!"))))
     }),
     Step(Steps.Help, (me: FBMessageEventIn) => {
-      HttpClient.post("Тут будет помощь!")
+      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"Тут будет помощь!"))))
     }),
   ).map(x => x.id -> x).toMap
 
@@ -148,12 +149,18 @@ object Steps extends LazyLogging {
   val Help = StepId("help")
 
   def nextStep(flowId: String, stepId: StepId): (String, StepId) = {
-    val nextStep = flows.get(flowId).flatMap(_.dropWhile(_ != stepId).drop(1).headOption)
-    nextStep.map(flowId -> _).getOrElse("help" -> Help)
+    val nextStep = flows.get(flowId).flatMap(_.dropWhile(!_.contains(stepId))).drop(1).headOption
+    nextStep.map(flowId -> _.head).getOrElse("help" -> Help)
   }
 
-  val flows: Map[String, List[StepId]] = Map(
-    "basic" -> (AskName :: AddName :: AskSkills :: AddSkills :: AskSubskills :: AddSubkills :: AskFrequency :: AddFrequency :: Finish :: Nil),
-    "help" -> (Help :: Nil)
+  def find(flowId: String, stepId: StepId): Option[List[StepId]] = {
+    flows.get(flowId)
+      .flatMap(_.find(_.contains(stepId)))
+      .map(_.dropWhile(_ != stepId))
+  }
+
+  val flows: Map[String, List[List[StepId]]] = Map(
+    "basic" -> ((AskName :: Nil) :: (AddName :: AskSkills :: Nil) :: (AddSkills :: AskSubskills :: Nil) :: (AddSubkills :: AskFrequency :: Nil) :: (AddFrequency :: Finish :: Nil) :: Nil),
+    "help" -> ((Help :: Nil) :: Nil)
   )
 }
