@@ -116,7 +116,7 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(s"Пожалуйста, введите периодичность. (Валенька, эта стадия еще не готова окончательно. Пока можно написать \"2 недели\""))))
+        message = FBMessage(text = Some("Пожалуйста, введите периодичность. (Валенька, эта стадия еще не готова окончательно. Пока можно написать '2 недели'"))))
     }),
     Step(Steps.AddFrequency, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -149,7 +149,7 @@ object Steps extends LazyLogging {
   val Help = StepId("help")
 
   def nextStep(flowId: String, stepId: StepId): (String, StepId) = {
-    val nextStep = flows.get(flowId).flatMap(_.dropWhile(!_.contains(stepId))).drop(1).headOption
+    val nextStep = flows.get(flowId).flatMap(_.dropWhile(x => !x.contains(stepId)).drop(1).headOption)
     nextStep.map(flowId -> _.head).getOrElse("help" -> Help)
   }
 
