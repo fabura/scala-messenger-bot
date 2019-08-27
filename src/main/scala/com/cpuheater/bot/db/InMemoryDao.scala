@@ -3,14 +3,15 @@ package com.cpuheater.bot.db
 import com.cpuheater.bot.db.DbModel._
 
 class InMemoryDao extends BotDao {
+  def print(): Unit = println(usersMap)
 
   private val usersMap: scala.collection.mutable.Map[String, User] = scala.collection.mutable.Map()
 
   override def getStepId(userId: String): Option[(String, StepId)] = usersMap.get(userId).map(u => u.flowId -> u.stepId)
 
-  override def updateUserStepId(userId: String,flowId: String, step: DbModel.StepId): Unit = {
-    val user = usersMap.getOrElseUpdate(userId, User(userId,flowId, step))
-    val newUser = user.copy(stepId = step)
+  override def updateUserStepId(userId: String, flowId: String, step: DbModel.StepId): Unit = {
+    val user = usersMap.getOrElseUpdate(userId, User(userId, flowId, step))
+    val newUser = user.copy(flowId = flowId, stepId = step)
     usersMap.update(userId, newUser)
   }
 

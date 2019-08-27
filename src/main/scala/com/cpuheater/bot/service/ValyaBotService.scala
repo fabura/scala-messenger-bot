@@ -38,8 +38,9 @@ object ValyaBotService extends LazyLogging {
       function.get.action.apply(me)
       val (newFlowId, newStepId) = Steps.nextStep(flowId, stepId)
       logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
-      dao.getUser(senderId).map(_.copy(flowId = newFlowId, stepId = newStepId)).foreach(dao.saveUser)
+      dao.updateUserStepId(senderId, newFlowId, newStepId)
     }
+    dao.print();
   }
 
   def handlePostBack(senderId: String, postback: FBPostback)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
