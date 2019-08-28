@@ -102,7 +102,7 @@ trait StepsRunner extends LazyLogging {
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id), message = FBMessage(
         attachment = Some(Attachment(`type` = "template",
-                                     payload = Payload(url = None, templateType = Some("button"),
+                                     payload = Payload(url = None, template_type = Some("button"),
                                                        text = Some("Выберите периодичность"),
                                                        buttons = Some(Seq(
                                                          Button(`type` = "postback",

@@ -4,7 +4,7 @@ package object model {
 
   case class Button(`type`: String, title: String, payload: String)
 
-  case class Payload(url: Option[String] = None, templateType: Option[String] = None, text: Option[String] = None, buttons: Option[Seq[Button]] = None)
+  case class Payload(url: Option[String] = None, template_type: Option[String] = None, text: Option[String] = None, buttons: Option[Seq[Button]] = None)
 
   case class Attachment(`type`: String, payload: Payload)
 
