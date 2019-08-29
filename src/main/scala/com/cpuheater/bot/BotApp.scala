@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.util.Timeout
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.cpuheater.bot.route.{CertRoute, FBRoute}
+import com.cpuheater.bot.route.{FBRoute, SkillsRoute}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
@@ -18,7 +18,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 
-object BotApp extends App with FBRoute with CertRoute with LazyLogging {
+object BotApp extends App with FBRoute with SkillsRoute with LazyLogging {
 
   val decider: Supervision.Decider = { e =>
     logger.error(s"Exception in stream $e")
@@ -26,20 +26,22 @@ object BotApp extends App with FBRoute with CertRoute with LazyLogging {
   }
 
   implicit val actorSystem: ActorSystem = ActorSystem("bot", ConfigFactory.load)
-  val materializerSettings: ActorMaterializerSettings = ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  val materializerSettings: ActorMaterializerSettings = ActorMaterializerSettings(
+    actorSystem).withSupervisionStrategy(decider)
   implicit val materializer: ActorMaterializer = ActorMaterializer(materializerSettings)
 
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
   val routes = {
-    logRequestResult("bot") {
+    skillsRoute ~ getFromResourceDirectory("web") ~ logRequestResult("bot") {
       fbRoute
-    } ~ certRoute
+    }
   }
 
   implicit val timeout = Timeout(30.seconds)
 
-  val routeLogging = DebuggingDirectives.logRequestResult("RouteLogging", Logging.DebugLevel)(routes)
+  val routeLogging = DebuggingDirectives.logRequestResult("RouteLogging", Logging.DebugLevel)(
+    routes)
 
   // do not store passwords in code, read them from somewhere safe!
   val password = "".toCharArray

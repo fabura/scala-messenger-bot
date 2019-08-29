@@ -4,14 +4,16 @@ import com.cpuheater.bot.model._
 import spray.json.{DeserializationException, JsString, JsValue, JsonFormat, _}
 
 
-object BotJson extends  DefaultJsonProtocol{
+object BotJson extends DefaultJsonProtocol {
   implicit val buttonFormat = jsonFormat3(Button)
 
   implicit val payloadFormat = jsonFormat4(Payload)
 
   implicit val attachmentFormat = jsonFormat2(Attachment)
 
-  implicit val fbMessageFormat = jsonFormat5(FBMessage)
+  implicit val quickReplyFormat = jsonFormat4(QuickReply)
+
+  implicit val fbMessageFormat = jsonFormat6(FBMessage)
 
   implicit val FBPostbackFormat = jsonFormat2(FBPostback)
 
@@ -27,5 +29,6 @@ object BotJson extends  DefaultJsonProtocol{
 
   implicit val fbPObjectFormat = jsonFormat2(FBPObject)
 
+  implicit val skillsFormat = jsonFormat2(Skills)
 
 }

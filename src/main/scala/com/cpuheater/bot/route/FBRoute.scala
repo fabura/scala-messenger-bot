@@ -14,14 +14,15 @@ import com.cpuheater.bot.util.RouteSupport
 import com.typesafe.scalalogging.LazyLogging
 import com.cpuheater.bot.json.BotJson._
 
-trait FBRoute extends  Directives with LazyLogging with RouteSupport {
+trait FBRoute extends Directives with LazyLogging with RouteSupport {
 
   protected implicit def actorSystem: ActorSystem
+
   protected implicit def ec: ExecutionContext
-  protected implicit val materializer: ActorMaterializer
 
   private val fbService = FBService
 
+  protected implicit val materializer: ActorMaterializer
   val fbRoute = {
     extractRequest { request: HttpRequest =>
       get {
@@ -34,17 +35,17 @@ trait FBRoute extends  Directives with LazyLogging with RouteSupport {
           }
         }
       } ~
-      post {
-        verifyPayload(request)(materializer, ec) {
+        post {
           path("webhook") {
-            entity(as[FBPObject]) { fbObject =>
-              complete {
-                fbService.handleMessage(fbObject)
+            verifyPayload(request)(materializer, ec) {
+              entity(as[FBPObject]) { fbObject =>
+                complete {
+                  fbService.handleMessage(fbObject)
+                }
               }
             }
           }
         }
-      }
     }
   }
 }

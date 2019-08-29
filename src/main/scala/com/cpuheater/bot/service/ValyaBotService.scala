@@ -5,7 +5,7 @@ import akka.stream.ActorMaterializer
 import com.cpuheater.bot.db.{BotDao, InMemoryDao}
 import com.cpuheater.bot.db.DbModel.{Skill, StepId, SubSkill}
 import com.cpuheater.bot.model
-import com.cpuheater.bot.model.{Attachment, Button, FBMessage, FBMessageEventIn, FBMessageEventOut, FBPostback, FBRecipient, Payload}
+import com.cpuheater.bot.model.{Attachment, Button, FBMessage, FBMessageEventIn, FBMessageEventOut, FBPostback, FBRecipient, Payload, QuickReply}
 import com.cpuheater.bot.util.HttpClient
 import com.cpuheater.bot.json.BotJson._
 import com.cpuheater.bot.service.Steps.logger
@@ -62,7 +62,7 @@ trait StepsRunner extends LazyLogging {
   val steps: Map[StepId, Step] = Seq(
     Step(Steps.AskName, (me: FBMessageEventIn) => {
       val response = FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-                                       message = FBMessage(text = Some(s"Введите имя и фамилию")))
+        message = FBMessage(text = Some(s"Введите имя и фамилию")))
       HttpClient.post(response)
     }),
     Step(Steps.AddName, (me: FBMessageEventIn) => {
@@ -75,8 +75,8 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AskSkills, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-                                        message = FBMessage(text = Some(
-                                          s"Пожалуйста, введите навыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
+        message = FBMessage(text = Some(
+          s"Пожалуйста, введите навыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
     }),
     Step(Steps.AddSkills, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -88,8 +88,8 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AskSubskills, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-                                        message = FBMessage(text = Some(
-                                          s"Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
+        message = FBMessage(text = Some(
+          s"Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
     }),
     Step(Steps.AddSubkills, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -101,19 +101,17 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id), message = FBMessage(
-        attachment = Some(Attachment(`type` = "template",
-                                     payload = Payload(url = None, template_type = Some("button"),
-                                                       text = Some("Выберите периодичность"),
-                                                       buttons = Some(Seq(
-                                                         Button(`type` = "postback",
-                                                                title = "Раз в неделю",
-                                                                payload = "week"),
-                                                         Button(`type` = "postback",
-                                                                title = "Раз в 2 недели",
-                                                                payload = "2 weeks"),
-                                                         Button(`type` = "postback",
-                                                                title = "Раз в месяц",
-                                                                payload = "month")))))))))
+        text = Some("Выберите периодичность"),
+        quick_replies = Some(Seq(
+          QuickReply(content_type = "text",
+            title = "Раз в неделю",
+            payload = "week"),
+          QuickReply(content_type = "text",
+            title = "Раз в 2 недели",
+            payload = "2 weeks"),
+          QuickReply(content_type = "text",
+            title = "Раз в месяц",
+            payload = "month"))))))
     }),
     Step(Steps.AddFrequency, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -124,13 +122,13 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.Finish, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-                                        message = FBMessage(text = Some(s"Готово!"))))
+        message = FBMessage(text = Some(s"Готово!"))))
     }),
     Step(Steps.Help, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-                                        message = FBMessage(text = Some(s"Тут будет помощь!"))))
+        message = FBMessage(text = Some(s"Тут будет помощь!"))))
     }),
-    ).map(x => x.id -> x).toMap
+  ).map(x => x.id -> x).toMap
 
 }
 
@@ -148,7 +146,7 @@ object Steps extends LazyLogging {
   val flows: Map[String, List[List[StepId]]] = Map(
     "basic" -> ((AskName :: Nil) :: (AddName :: AskSkills :: Nil) :: (AddSkills :: AskSubskills :: Nil) :: (AddSubkills :: AskFrequency :: Nil) :: (AddFrequency :: Finish :: Nil) :: Nil),
     "help" -> ((Help :: Nil) :: Nil)
-    )
+  )
 
   def nextStep(flowId: String, stepId: StepId): (String, StepId) = {
     val nextStep = flows.get(flowId).flatMap(

@@ -22,6 +22,10 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging)
 
+cancelable in Global := true
+
+fork in run := true
+
 //enablePlugins(DockerPlugin)
 //
 //enablePlugins(AshScriptPlugin)
