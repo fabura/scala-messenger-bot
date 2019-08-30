@@ -138,12 +138,11 @@ Example: Im Ashley. I work in a bank. In my free time I learn data science and p
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.Finish, (me: FBMessageEventIn) => {
-      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(s"Готово!"))))
+     Asker.ready(me.sender.id)
     }),
     Step(Steps.Help, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(s"Тут будет помощь!"))))
+        message = FBMessage(text = Some(s"There will be help!"))))
     }),
   ).map(x => x.id -> x).toMap
 
