@@ -32,9 +32,9 @@ trait SkillsRoute extends Directives with LazyLogging with RouteSupport {
           logger.info(request.toString())
           entity(as[Skills]) { skills =>
             logger.info(skills.toString)
-            HttpClient.post(FBMessageEventOut(recipient = FBRecipient(skills.psid),
-              message = FBMessage(text = Some(
-                "Он прочел все мои письма к тебе!"))))
+//            HttpClient.post(FBMessageEventOut(recipient = FBRecipient(skills.psid),
+//              message = FBMessage(text = Some(
+//                "Он прочел все мои письма к тебе!"))))
 
             dao.getUser(skills.psid).map(user => {
 
