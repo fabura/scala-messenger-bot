@@ -71,8 +71,16 @@ trait StepsRunner extends LazyLogging {
   val steps: Map[StepId, Step] = Seq(
     Step(Steps.AskName, (me: FBMessageEventIn) => {
       val response = FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(s"Введите имя и фамилию")))
+        message = FBMessage(text = Some(s"""
+          Your next answers will be visible to your potential colleagues so that they can know you better 🤝
+          You can change your answers any time later.
+          """)))
       HttpClient.post(response)
+      val response2 = FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+        message = FBMessage(text = Some(s"""Please describe yourself in 2-5 sentences.
+Example: Im Ashley. I work in a bank. In my free time I learn data science and photograph events. Huge animals fan 🦎
+          """)))
+      HttpClient.post(response2)
     }),
     Step(Steps.AddName, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
@@ -88,11 +96,11 @@ trait StepsRunner extends LazyLogging {
           Some(Attachment(`type` = "template",
             payload = Payload(
               template_type = Some("button"),
-              text = Some("Добавить навыки"),
+              text = Some("Nice to meet you!\nWhat kind of work you can do?"),
               buttons = Some(Seq(
                 Button(
                   `type` = "web_url",
-                  title = "Жми сюда!",
+                  title = "Press here!",
                   url = Some(s"https://secure-cove-14093.herokuapp.com/skills.html?psid=${me.sender.id}"),
                   webview_height_ratio = Some("full"),
                   messenger_extensions = Some("true")
@@ -144,21 +152,31 @@ trait StepsRunner extends LazyLogging {
 object Asker {
   def ready(psid: String)(implicit ec: ExecutionContext, system: ActorSystem) = {
     HttpClient.post(FBMessageEventOut(recipient = FBRecipient(psid),
-      message = FBMessage(text = Some(s"Готово!"))))
+      message = FBMessage(text = Some(s"""Well done! 🌟
+                                         |✔️You will receive task options regularly.
+                                         |✔️If you don't want or don't feel ready to do the suggested task, we will show you another available option.
+                                         |✔️Once you accept the task, we will connect you with the client to discuss the details.
+                                         |✔️If anything goes wrong, please tell us.
+                                         |""".stripMargin))))
+    HttpClient.post(FBMessageEventOut(recipient = FBRecipient(psid),
+      message = FBMessage(text = Some(s"""We will send you task options as soon as they appear⏳
+                                         |Have a productive day!
+                                         |""".stripMargin))))
+
   }
 
   def askFrequency(psid: String)(implicit ec: ExecutionContext, system: ActorSystem) = {
     HttpClient.post(FBMessageEventOut(recipient = FBRecipient(psid), message = FBMessage(
-      text = Some("Выберите периодичность"),
+      text = Some("We will send you task options as they appear. How often do you want to receive them? \uD83D\uDCC5 "),
       quick_replies = Some(Seq(
         QuickReply(content_type = "text",
-          title = "Раз в неделю",
+          title = "Once a week",
           payload = "week"),
         QuickReply(content_type = "text",
-          title = "Раз в 2 недели",
+          title = "Every 2 weeks",
           payload = "2 weeks"),
         QuickReply(content_type = "text",
-          title = "Раз в месяц",
+          title = "Once a month",
           payload = "month"))))))
 
 

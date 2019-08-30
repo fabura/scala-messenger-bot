@@ -297,13 +297,21 @@
     fjs.parentNode.insertBefore(js, fjs);
   }(document, 'script', 'Messenger'));
 </script>
-
-<h1>Выберите навыки:</h1>
+<h1>Skills</h1>
+<p>Please choose from the following options. If several options are suitable, select all that apply.
+  And please don't be a perfectionist! If you don't have a degree or 3 years of experience in this field, that’s ok, you can still help a lot 🛠
+</p>
 
 <form action="/skills" method="post">
-  <input type="checkbox" name="skill[]" value="Programming">Программирование<br>
-  <input type="checkbox" name="skill[]" value="Translation">Переводы<br>
-  <input type="checkbox" name="skill[]" value="Something">Ковыряние в носу<br><br>
+    <input type="checkbox" name="skill[]" value="IT">IT, Software Development<br>
+    <input type="checkbox" name="skill[]" value="Analytics">Analytics, Data Science<br>
+    <input type="checkbox" name="skill[]" value="Management">Management<br>
+    <input type="checkbox" name="skill[]" value="Sales">Sales, Marketing<br>
+    <input type="checkbox" name="skill[]" value="Design">Design, Architecture<br>
+    <input type="checkbox" name="skill[]" value="Writing">Writing, Translation<br>
+    <input type="checkbox" name="skill[]" value="Legal">Legal<br>
+    <input type="checkbox" name="skill[]" value="Customer">Customer service<br>
+  <br>
   <input type="hidden" name="psid" value="">
 
 
