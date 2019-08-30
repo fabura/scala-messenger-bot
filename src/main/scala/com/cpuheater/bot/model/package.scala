@@ -2,7 +2,7 @@ package com.cpuheater.bot
 
 package object model {
 
-  case class Button(`type`: String, title: String, payload: String)
+  case class Button(`type`: String, title: String, url: Option[String], payload: Option[String] = None, webview_height_ratio: Option[String] = None, messenger_extensions: Option[String] = None)
 
   case class Payload(url: Option[String] = None, template_type: Option[String] = None, text: Option[String] = None, buttons: Option[Seq[Button]] = None)
 

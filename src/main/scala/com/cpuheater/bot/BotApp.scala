@@ -4,6 +4,9 @@ import java.security.{KeyStore, SecureRandom}
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.javadsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.{ConnectionContext, Http}
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.util.Timeout
@@ -33,7 +36,13 @@ object BotApp extends App with FBRoute with SkillsRoute with LazyLogging {
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
   val routes = {
-    skillsRoute ~ getFromResourceDirectory("web") ~ logRequestResult("bot") {
+    skillsRoute ~
+      respondWithHeaders(
+        headers.RawHeader("X-Frame-Options", "ALLOW-FROM https://www.messenger.com/"),
+        headers.RawHeader("X-Frame-Options", "ALLOW-FROM https://www.facebook.com/")
+      ) {
+        getFromResourceDirectory("web")
+      } ~ logRequestResult("bot") {
       fbRoute
     }
   }

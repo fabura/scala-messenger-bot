@@ -5,7 +5,7 @@ import spray.json.{DeserializationException, JsString, JsValue, JsonFormat, _}
 
 
 object BotJson extends DefaultJsonProtocol {
-  implicit val buttonFormat = jsonFormat3(Button)
+  implicit val buttonFormat = jsonFormat6(Button)
 
   implicit val payloadFormat = jsonFormat4(Payload)
 

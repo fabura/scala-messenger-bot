@@ -75,8 +75,19 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AskSkills, (me: FBMessageEventIn) => {
       HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(
-          s"Пожалуйста, введите навыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
+        message = FBMessage(attachment =
+          Some(Attachment(`type` = "template",
+            payload = Payload(
+              template_type = Some("button"),
+              text = Some("Добавить навыки"),
+              buttons = Some(Seq(
+                Button(
+                  `type` = "web_url",
+                  title = "Жми сюда!",
+                  url = Some(s"https://secure-cove-14093.herokuapp.com/skills.html?psid=${me.sender.id}"),
+                  webview_height_ratio = Some("full"),
+                  messenger_extensions = Some("true")
+                )))))))))
     }),
     Step(Steps.AddSkills, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
