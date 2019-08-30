@@ -11,7 +11,7 @@ import com.cpuheater.bot.json.BotJson._
 import com.cpuheater.bot.service.Steps.logger
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
 object ValyaBotService extends LazyLogging {
@@ -30,24 +30,28 @@ object ValyaBotService extends LazyLogging {
     val steps = Steps.find(flowId, stepId)
     if (steps.isEmpty) {
       logger.debug(s"Cannot find step for user: $senderId, $flowId, $stepId")
+      Future(())
     } else {
-      steps.get.map(s => stepsRunner.steps.getOrElse(s, sys.error(s"not step! $s"))).map(
-        _.action).foreach(_.apply(me))
-      val (newFlowId, newStepId) = Steps.nextStep(flowId, steps.get.last)
-      logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
-      stepsRunner.updateUserStepId(senderId, newFlowId, newStepId)
-    }
-    stepsRunner.print()
+      Future.sequence(
+        steps.get.map(s => stepsRunner.steps.getOrElse(s, sys.error(s"not step! $s"))).map(
+          _.action).map(_.apply(me))
+      ).map {
+        _ =>
+          val (newFlowId, newStepId) = Steps.nextStep(flowId, steps.get.last)
+          logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
+          Future(stepsRunner.updateUserStepId(senderId, newFlowId, newStepId))
+      }
+    }.map(_ => stepsRunner.print())
   }
 }
 
 trait BotStep {
   val id: StepId
 
-  def action: FBMessageEventIn => Unit
+  def action: FBMessageEventIn => Future[Unit]
 }
 
-case class Step(id: StepId, action: FBMessageEventIn => Unit) extends BotStep
+case class Step(id: StepId, action: FBMessageEventIn => Future[Unit]) extends BotStep
 
 trait WithExecutors {
   implicit def ex: ExecutionContext
@@ -64,7 +68,7 @@ trait StepsRunner extends LazyLogging {
         message = FBMessage(text = Some(s"Введите имя и фамилию")))
       HttpClient.post(response)
     }),
-    Step(Steps.AddName, (me: FBMessageEventIn) => {
+    Step(Steps.AddName, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
       val updatedUser = getUser(senderId).flatMap(
         u => me.message.map(name => u.copy(name = name.text)))
@@ -88,7 +92,7 @@ trait StepsRunner extends LazyLogging {
                   messenger_extensions = Some("true")
                 )))))))))
     }),
-    Step(Steps.AddSkills, (me: FBMessageEventIn) => {
+    Step(Steps.AddSkills, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
       val updatedUser = getUser(senderId).flatMap(u => me.message.flatMap(
         message => message.text.map(
@@ -112,7 +116,7 @@ trait StepsRunner extends LazyLogging {
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
       Asker.askFrequency(me.sender.id)
     }),
-    Step(Steps.AddFrequency, (me: FBMessageEventIn) => {
+    Step(Steps.AddFrequency, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
       val updatedUser = getUser(senderId).flatMap(
         u => me.postback.map(postback => u.copy(frequency = postback.payload)))
