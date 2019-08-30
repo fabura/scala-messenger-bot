@@ -16,17 +16,16 @@ import scala.language.higherKinds
 
 object ValyaBotService extends LazyLogging {
 
-  val dao = new InMemoryDao
 
   def handleMessage(me: model.FBMessageEventIn)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
     val senderId = me.sender.id
-
-    val (flowId, stepId) = dao.getStepId(senderId).getOrElse("basic" -> Steps.AskName)
 
     val stepsRunner = new InMemoryDao with StepsRunner with WithExecutors {
       implicit val ex = ec
       implicit val sys = system
     }
+
+    val (flowId, stepId) = stepsRunner.getStepId(senderId).getOrElse("basic" -> Steps.AskName)
 
     val steps = Steps.find(flowId, stepId)
     if (steps.isEmpty) {
@@ -36,9 +35,9 @@ object ValyaBotService extends LazyLogging {
         _.action).foreach(_.apply(me))
       val (newFlowId, newStepId) = Steps.nextStep(flowId, steps.get.last)
       logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
-      dao.updateUserStepId(senderId, newFlowId, newStepId)
+      stepsRunner.updateUserStepId(senderId, newFlowId, newStepId)
     }
-    dao.print()
+    stepsRunner.print()
   }
 }
 
@@ -97,32 +96,21 @@ trait StepsRunner extends LazyLogging {
       updatedUser.foreach(saveUser)
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
-    Step(Steps.AskSubskills, (me: FBMessageEventIn) => {
-      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
-        message = FBMessage(text = Some(
-          s"Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
-    }),
-    Step(Steps.AddSubkills, (me: FBMessageEventIn) => {
-      val senderId = me.sender.id
-      val updatedUser = getUser(senderId).flatMap(u => me.message.flatMap(
-        message => message.text.map(
-          text => u.copy(subSkills = text.split("\\s+").map(SubSkill.apply).toSeq))))
-      updatedUser.foreach(saveUser)
-      if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
-    }),
+    //    Step(Steps.AskSubskills, (me: FBMessageEventIn) => {
+    //      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id),
+    //        message = FBMessage(text = Some(
+    //          s"Пожалуйста, введите поднавыки. (Валенька, эта стадия еще не готова окончательно. Пока можно просто строкой писать навыки"))))
+    //    }),
+    //    Step(Steps.AddSubkills, (me: FBMessageEventIn) => {
+    //      val senderId = me.sender.id
+    //      val updatedUser = getUser(senderId).flatMap(u => me.message.flatMap(
+    //        message => message.text.map(
+    //          text => u.copy(subSkills = text.split("\\s+").map(SubSkill.apply).toSeq))))
+    //      updatedUser.foreach(saveUser)
+    //      if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
+    //    }),
     Step(Steps.AskFrequency, (me: FBMessageEventIn) => {
-      HttpClient.post(FBMessageEventOut(recipient = FBRecipient(me.sender.id), message = FBMessage(
-        text = Some("Выберите периодичность"),
-        quick_replies = Some(Seq(
-          QuickReply(content_type = "text",
-            title = "Раз в неделю",
-            payload = "week"),
-          QuickReply(content_type = "text",
-            title = "Раз в 2 недели",
-            payload = "2 weeks"),
-          QuickReply(content_type = "text",
-            title = "Раз в месяц",
-            payload = "month"))))))
+      Asker.askFrequency(me.sender.id)
     }),
     Step(Steps.AddFrequency, (me: FBMessageEventIn) => {
       val senderId = me.sender.id
@@ -143,19 +131,44 @@ trait StepsRunner extends LazyLogging {
 
 }
 
+object Asker {
+  def ready(psid: String)(implicit ec: ExecutionContext, system: ActorSystem) = {
+    HttpClient.post(FBMessageEventOut(recipient = FBRecipient(psid),
+      message = FBMessage(text = Some(s"Готово!"))))
+  }
+
+  def askFrequency(psid: String)(implicit ec: ExecutionContext, system: ActorSystem) = {
+    HttpClient.post(FBMessageEventOut(recipient = FBRecipient(psid), message = FBMessage(
+      text = Some("Выберите периодичность"),
+      quick_replies = Some(Seq(
+        QuickReply(content_type = "text",
+          title = "Раз в неделю",
+          payload = "week"),
+        QuickReply(content_type = "text",
+          title = "Раз в 2 недели",
+          payload = "2 weeks"),
+        QuickReply(content_type = "text",
+          title = "Раз в месяц",
+          payload = "month"))))))
+
+
+  }
+
+}
+
 object Steps extends LazyLogging {
   val AskName = StepId("ask name")
   val AddName = StepId("add name")
   val AskSkills = StepId("ask skills")
   val AddSkills = StepId("add skills")
-  val AskSubskills = StepId("ask subskills")
-  val AddSubkills = StepId("add subkills")
+  //  val AskSubskills = StepId("ask subskills")
+  //  val AddSubkills = StepId("add subkills")
   val AskFrequency = StepId("ask frequency")
   val AddFrequency = StepId("add frequency")
   val Finish = StepId("finish")
   val Help = StepId("help")
   val flows: Map[String, List[List[StepId]]] = Map(
-    "basic" -> ((AskName :: Nil) :: (AddName :: AskSkills :: Nil) :: (AddSkills :: AskSubskills :: Nil) :: (AddSubkills :: AskFrequency :: Nil) :: (AddFrequency :: Finish :: Nil) :: Nil),
+    "basic" -> ((AskName :: Nil) :: (AddName :: AskSkills :: Nil) :: (AddSkills :: /*AskSubskills ::*/ Nil) :: (/*AddSubkills :: */ AskFrequency :: Nil) :: (AddFrequency :: Finish :: Nil) :: Nil),
     "help" -> ((Help :: Nil) :: Nil)
   )
 
