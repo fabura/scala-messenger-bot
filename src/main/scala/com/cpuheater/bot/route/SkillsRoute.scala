@@ -42,7 +42,7 @@ trait SkillsRoute extends Directives with LazyLogging with RouteSupport {
               if (user.stepId == Steps.AskFrequency) {
                 Asker.askFrequency(skills.psid)
                 val newNewUser = newUser.copy(stepId = Steps.AddFrequency)
-                dao.saveUser(newUser)
+                dao.saveUser(newNewUser)
               } else {
                 Asker.ready(skills.psid)
                 dao.saveUser(newUser)
