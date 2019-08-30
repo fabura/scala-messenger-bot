@@ -16,16 +16,18 @@ import scala.language.higherKinds
 
 object ValyaBotService extends LazyLogging {
 
+    val dao_ = new InMemoryDao
 
   def handleMessage(me: model.FBMessageEventIn)(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer): Unit = {
     val senderId = me.sender.id
 
-    val stepsRunner = new InMemoryDao with StepsRunner with WithExecutors {
+    val stepsRunner = new StepsRunner with WithExecutors with WithDao {
+      val dao = dao_
       implicit val ex = ec
       implicit val sys = system
     }
 
-    val (flowId, stepId) = stepsRunner.getStepId(senderId).getOrElse("basic" -> Steps.AskName)
+    val (flowId, stepId) = stepsRunner.dao.getStepId(senderId).getOrElse("basic" -> Steps.AskName)
 
     val steps = Steps.find(flowId, stepId)
     if (steps.isEmpty) {
@@ -39,9 +41,9 @@ object ValyaBotService extends LazyLogging {
         _ =>
           val (newFlowId, newStepId) = Steps.nextStep(flowId, steps.get.last)
           logger.debug(s"next step: flowId = $newFlowId, stepId = $newStepId")
-          Future(stepsRunner.updateUserStepId(senderId, newFlowId, newStepId))
+          Future(stepsRunner.dao.updateUserStepId(senderId, newFlowId, newStepId))
       }
-    }.map(_ => stepsRunner.print())
+    }.map(_ => stepsRunner.dao.print())
   }
 }
 
@@ -59,8 +61,12 @@ trait WithExecutors {
   implicit def sys: ActorSystem
 }
 
+trait WithDao {
+  def dao: BotDao
+}
+
 trait StepsRunner extends LazyLogging {
-  this: WithExecutors with BotDao =>
+  this: WithExecutors with WithDao =>
 
   val steps: Map[StepId, Step] = Seq(
     Step(Steps.AskName, (me: FBMessageEventIn) => {
@@ -70,10 +76,10 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AddName, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
-      val updatedUser = getUser(senderId).flatMap(
+      val updatedUser = dao.getUser(senderId).flatMap(
         u => me.message.map(name => u.copy(name = name.text)))
 
-      updatedUser.foreach(saveUser)
+      updatedUser.foreach(dao.saveUser)
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.AskSkills, (me: FBMessageEventIn) => {
@@ -94,10 +100,10 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AddSkills, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
-      val updatedUser = getUser(senderId).flatMap(u => me.message.flatMap(
+      val updatedUser = dao.getUser(senderId).flatMap(u => me.message.flatMap(
         message => message.text.map(
           text => u.copy(skills = text.split("\\s+").map(Skill.apply).toSeq))))
-      updatedUser.foreach(saveUser)
+      updatedUser.foreach(dao.saveUser)
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     //    Step(Steps.AskSubskills, (me: FBMessageEventIn) => {
@@ -118,9 +124,9 @@ trait StepsRunner extends LazyLogging {
     }),
     Step(Steps.AddFrequency, (me: FBMessageEventIn) => Future {
       val senderId = me.sender.id
-      val updatedUser = getUser(senderId).flatMap(
+      val updatedUser = dao.getUser(senderId).flatMap(
         u => me.postback.map(postback => u.copy(frequency = postback.payload)))
-      updatedUser.foreach(saveUser)
+      updatedUser.foreach(dao.saveUser)
       if (updatedUser.isEmpty) logger.debug(s"User is empty! $senderId")
     }),
     Step(Steps.Finish, (me: FBMessageEventIn) => {
